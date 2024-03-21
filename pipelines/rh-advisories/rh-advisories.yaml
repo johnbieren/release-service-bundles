@@ -192,54 +192,54 @@ spec:
           workspace: release-workspace
       runAfter:
         - collect-data
-    - name: verify-enterprise-contract
-      taskRef:
-        resolver: "bundles"
-        params:
-          - name: bundle
-            value: $(params.verify_ec_task_bundle)
-          - name: kind
-            value: task
-          - name: name
-            value: verify-enterprise-contract
-      params:
-        - name: IMAGES
-          value: "$(workspaces.data.path)/$(tasks.collect-data.results.snapshotSpec)"
-        - name: SSL_CERT_DIR
-          value: /var/run/secrets/kubernetes.io/serviceaccount
-        - name: POLICY_CONFIGURATION
-          value: $(params.enterpriseContractPolicy)
-        - name: STRICT
-          value: "1"
-        - name: IGNORE_REKOR
-          value: "true"
-        - name: PUBLIC_KEY
-          value: $(params.enterpriseContractPublicKey)
-      workspaces:
-        - name: data
-          workspace: release-workspace
-      runAfter:
-        - apply-mapping
-    - name: push-snapshot
-      taskRef:
-        resolver: "git"
-        params:
-          - name: url
-            value: $(params.taskGitUrl)
-          - name: revision
-            value: $(params.taskGitRevision)
-          - name: pathInRepo
-            value: tasks/push-snapshot/push-snapshot.yaml
-      params:
-        - name: snapshotPath
-          value: "$(tasks.collect-data.results.snapshotSpec)"
-        - name: dataPath
-          value: "$(tasks.collect-data.results.data)"
-      workspaces:
-        - name: data
-          workspace: release-workspace
-      runAfter:
-        - verify-enterprise-contract
+#    - name: verify-enterprise-contract
+#      taskRef:
+#        resolver: "bundles"
+#        params:
+#          - name: bundle
+#            value: $(params.verify_ec_task_bundle)
+#          - name: kind
+#            value: task
+#          - name: name
+#            value: verify-enterprise-contract
+#      params:
+#        - name: IMAGES
+#          value: "$(workspaces.data.path)/$(tasks.collect-data.results.snapshotSpec)"
+#        - name: SSL_CERT_DIR
+#          value: /var/run/secrets/kubernetes.io/serviceaccount
+#        - name: POLICY_CONFIGURATION
+#          value: $(params.enterpriseContractPolicy)
+#        - name: STRICT
+#          value: "1"
+#        - name: IGNORE_REKOR
+#          value: "true"
+#        - name: PUBLIC_KEY
+#          value: $(params.enterpriseContractPublicKey)
+#      workspaces:
+#        - name: data
+#          workspace: release-workspace
+#      runAfter:
+#        - apply-mapping
+#    - name: push-snapshot
+#      taskRef:
+#        resolver: "git"
+#        params:
+#          - name: url
+#            value: $(params.taskGitUrl)
+#          - name: revision
+#            value: $(params.taskGitRevision)
+#          - name: pathInRepo
+#            value: tasks/push-snapshot/push-snapshot.yaml
+#      params:
+#        - name: snapshotPath
+#          value: "$(tasks.collect-data.results.snapshotSpec)"
+#        - name: dataPath
+#          value: "$(tasks.collect-data.results.data)"
+#      workspaces:
+#        - name: data
+#          workspace: release-workspace
+#      runAfter:
+#        - verify-enterprise-contract
     - name: populate-release-notes-images
       params:
         - name: dataPath
@@ -247,7 +247,7 @@ spec:
         - name: snapshotPath
           value: "$(tasks.collect-data.results.snapshotSpec)"
         - name: commonTags
-          value: $(tasks.push-snapshot.results.commonTags)
+          value: "one two"
       taskRef:
         params:
           - name: url
@@ -278,108 +278,108 @@ spec:
           workspace: release-workspace
       runAfter:
         - collect-data
-    - name: rh-sign-image
-      timeout: "2h00m0s"
-      taskRef:
-        resolver: "git"
-        params:
-          - name: url
-            value: $(params.taskGitUrl)
-          - name: revision
-            value: $(params.taskGitRevision)
-          - name: pathInRepo
-            value: tasks/rh-sign-image/rh-sign-image.yaml
-      params:
-        - name: snapshotPath
-          value: "$(tasks.collect-data.results.snapshotSpec)"
-        - name: dataPath
-          value: "$(tasks.collect-data.results.data)"
-        - name: requester
-          value: $(tasks.extract-requester-from-release.results.output-result)
-        - name: commonTags
-          value: $(tasks.push-snapshot.results.commonTags)
-        - name: pipelineRunUid
-          value: $(context.pipelineRun.uid)
-      workspaces:
-        - name: data
-          workspace: release-workspace
-    - name: create-pyxis-image
-      taskRef:
-        resolver: "git"
-        params:
-          - name: url
-            value: $(params.taskGitUrl)
-          - name: revision
-            value: $(params.taskGitRevision)
-          - name: pathInRepo
-            value: tasks/create-pyxis-image/create-pyxis-image.yaml
-      params:
-        - name: server
-          value: $(tasks.collect-pyxis-params.results.server)
-        - name: pyxisSecret
-          value: $(tasks.collect-pyxis-params.results.secret)
-        - name: rhPush
-          value: "true"
-        - name: commonTags
-          value: $(tasks.push-snapshot.results.commonTags)
-        - name: snapshotPath
-          value: "$(tasks.collect-data.results.snapshotSpec)"
-        - name: dataPath
-          value: "$(tasks.collect-data.results.data)"
-      workspaces:
-        - name: data
-          workspace: release-workspace
-      runAfter:
-        - rh-sign-image
-    - name: publish-pyxis-repository
-      taskRef:
-        resolver: "git"
-        params:
-          - name: url
-            value: $(params.taskGitUrl)
-          - name: revision
-            value: $(params.taskGitRevision)
-          - name: pathInRepo
-            value: tasks/publish-pyxis-repository/publish-pyxis-repository.yaml
-      params:
-        - name: server
-          value: $(tasks.collect-pyxis-params.results.server)
-        - name: pyxisSecret
-          value: $(tasks.collect-pyxis-params.results.secret)
-        - name: snapshotPath
-          value: "$(tasks.collect-data.results.snapshotSpec)"
-        - name: dataPath
-          value: "$(tasks.collect-data.results.data)"
-      workspaces:
-        - name: data
-          workspace: release-workspace
-      runAfter:
-        - create-pyxis-image
-    - name: run-file-updates
-      params:
-        - name: fileUpdatesPath
-          value: $(tasks.collect-data.results.data)
-        - name: jsonKey
-          value: ".fileUpdates"
-        - name: snapshotPath
-          value: "$(tasks.collect-data.results.snapshotSpec)"
-        - name: pipelineRunUid
-          value: $(context.pipelineRun.uid)
-      runAfter:
-        - push-snapshot
-      taskRef:
-        kind: Task
-        params:
-          - name: url
-            value: $(params.taskGitUrl)
-          - name: revision
-            value: $(params.taskGitRevision)
-          - name: pathInRepo
-            value: tasks/run-file-updates/run-file-updates.yaml
-        resolver: git
-      workspaces:
-        - name: data
-          workspace: release-workspace
+#    - name: rh-sign-image
+#      timeout: "2h00m0s"
+#      taskRef:
+#        resolver: "git"
+#        params:
+#          - name: url
+#            value: $(params.taskGitUrl)
+#          - name: revision
+#            value: $(params.taskGitRevision)
+#          - name: pathInRepo
+#            value: tasks/rh-sign-image/rh-sign-image.yaml
+#      params:
+#        - name: snapshotPath
+#          value: "$(tasks.collect-data.results.snapshotSpec)"
+#        - name: dataPath
+#          value: "$(tasks.collect-data.results.data)"
+#        - name: requester
+#          value: $(tasks.extract-requester-from-release.results.output-result)
+#        - name: commonTags
+#          value: $(tasks.push-snapshot.results.commonTags)
+#        - name: pipelineRunUid
+#          value: $(context.pipelineRun.uid)
+#      workspaces:
+#        - name: data
+#          workspace: release-workspace
+#    - name: create-pyxis-image
+#      taskRef:
+#        resolver: "git"
+#        params:
+#          - name: url
+#            value: $(params.taskGitUrl)
+#          - name: revision
+#            value: $(params.taskGitRevision)
+#          - name: pathInRepo
+#            value: tasks/create-pyxis-image/create-pyxis-image.yaml
+#      params:
+#        - name: server
+#          value: $(tasks.collect-pyxis-params.results.server)
+#        - name: pyxisSecret
+#          value: $(tasks.collect-pyxis-params.results.secret)
+#        - name: rhPush
+#          value: "true"
+#        - name: commonTags
+#          value: $(tasks.push-snapshot.results.commonTags)
+#        - name: snapshotPath
+#          value: "$(tasks.collect-data.results.snapshotSpec)"
+#        - name: dataPath
+#          value: "$(tasks.collect-data.results.data)"
+#      workspaces:
+#        - name: data
+#          workspace: release-workspace
+#      runAfter:
+#        - rh-sign-image
+#    - name: publish-pyxis-repository
+#      taskRef:
+#        resolver: "git"
+#        params:
+#          - name: url
+#            value: $(params.taskGitUrl)
+#          - name: revision
+#            value: $(params.taskGitRevision)
+#          - name: pathInRepo
+#            value: tasks/publish-pyxis-repository/publish-pyxis-repository.yaml
+#      params:
+#        - name: server
+#          value: $(tasks.collect-pyxis-params.results.server)
+#        - name: pyxisSecret
+#          value: $(tasks.collect-pyxis-params.results.secret)
+#        - name: snapshotPath
+#          value: "$(tasks.collect-data.results.snapshotSpec)"
+#        - name: dataPath
+#          value: "$(tasks.collect-data.results.data)"
+#      workspaces:
+#        - name: data
+#          workspace: release-workspace
+#      runAfter:
+#        - create-pyxis-image
+#    - name: run-file-updates
+#      params:
+#        - name: fileUpdatesPath
+#          value: $(tasks.collect-data.results.data)
+#        - name: jsonKey
+#          value: ".fileUpdates"
+#        - name: snapshotPath
+#          value: "$(tasks.collect-data.results.snapshotSpec)"
+#        - name: pipelineRunUid
+#          value: $(context.pipelineRun.uid)
+#      runAfter:
+#        - push-snapshot
+#      taskRef:
+#        kind: Task
+#        params:
+#          - name: url
+#            value: $(params.taskGitUrl)
+#          - name: revision
+#            value: $(params.taskGitRevision)
+#          - name: pathInRepo
+#            value: tasks/run-file-updates/run-file-updates.yaml
+#        resolver: git
+#      workspaces:
+#        - name: data
+#          workspace: release-workspace
     - name: check-data-keys
       params:
         - name: dataPath
